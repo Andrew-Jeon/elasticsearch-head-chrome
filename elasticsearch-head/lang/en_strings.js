@@ -114,7 +114,10 @@ i18n.setKeys({
 	"QueryFilter.DateRangeHint.from": "From : {0}",
 	"QueryFilter.DateRangeHint.to": "  To : {0}",
 	"Query.FailAndUndo": "Query Failed. Undoing last changes",
-	"StructuredQuery.ShowRawJson": "Show Raw JSON"
+	"StructuredQuery.ShowRawJson": "Show Raw JSON",
+    "DisplayMapping": "Display Mapping information is {0} {1}",
+    "DisplayMapping.All": "All",
+    "DisplayMapping.Select": "Select",
 });
 
 i18n.setKeys({

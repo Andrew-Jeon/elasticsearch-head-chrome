@@ -3888,6 +3888,7 @@
 			this._cluster = this.config.cluster;
 			this.el = $(this._main_template());
 			this.filtersEl = this.el.find(".uiFilterBrowser-filters");
+            this.displayMapping = this.el.find(".displayMapping");
 			this.attach( parent );
 			new data.MetaDataFactory({ cluster: this._cluster, onReady: function(metadata, eventData) {
 				this.metadata = metadata;
@@ -3948,6 +3949,7 @@
 			var search = new data.BoolQuery();
 			search.setSize( this.el.find(".uiFilterBrowser-outputSize").val() )
 			this.fire("startingSearch");
+            this.displayMappingRadio = $('input[name=displayMappingRadio]:checked').val();
 			this.filtersEl.find(".uiFilterBrowser-row").each(function(i, row) {
 				row = $(row);
 				var bool = row.find(".bool").val();
@@ -3976,6 +3978,20 @@
 					}
 				} else {
 					value = row.find(".qual").val();
+
+                    if (row.find(".qual").attr("type") == "datetime-local") {
+                        var pattern = /(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d).(\d\d\d)/i;
+
+                        if (!pattern.test(value)) {
+                            var pattern2 = /(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d)/i;
+                            if (pattern2.test(value)) {
+                                value += ":00.000";
+                            } else {
+                                value += ".000";
+                            }
+                        }
+                        value += "Z";
+                    }
 				}
 				search.addClause(value, field, op, bool);
 			});
@@ -4021,16 +4037,30 @@
 			op.siblings().remove(".qual,.range,.fuzzy");
 			if(opv === 'term' || opv === 'wildcard' || opv === 'prefix' || opv === "query_string" || opv === 'text') {
 				op.after({ tag: "INPUT", cls: "qual", type: "text" });
+                this.customClickEvent(jEv, op, "doc.start_date");
 			} else if(opv === 'range') {
 				op.after(this._range_template());
 			} else if(opv === 'fuzzy') {
 				op.after(this._fuzzy_template());
 			}
 		},
+
+        customClickEvent: function (jEv, op, fieldName) {
+            var instance = this;
+
+            if ($(jEv.target.previousSibling).val() == fieldName) {
+                $(op).parent().find(".qual").each(function () {
+                    this.type = "datetime-local";
+                    this.step = "0.001";
+                    this.value = "2017001-01T00:12:12:000Z";
+                });
+            }
+        },
 		
 		_main_template: function() {
 			return { tag: "DIV", children: [
 				{ tag: "DIV", cls: "uiFilterBrowser-filters" },
+				{ tag: "DIV", cls: "displayMapping", children: i18n.complex("DisplayMapping", [{tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "All", text:"All"}, i18n.text("DisplayMapping.All"), {tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "Select"}, i18n.text("DisplayMapping.Select") ])},
 				{ tag: "BUTTON", type: "button", text: i18n.text("General.Search"), onclick: this._search_handler },
 				{ tag: "LABEL", children:
 					i18n.complex("FilterBrowser.OutputType", { tag: "SELECT", cls: "uiFilterBrowser-outputFormat", children: [
