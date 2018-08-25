@@ -3893,8 +3893,19 @@
 			new data.MetaDataFactory({ cluster: this._cluster, onReady: function(metadata, eventData) {
 				this.metadata = metadata;
 				this._createFilters_handler(eventData.originalData.metadata.indices);
+				this.checkboxMapping(this.metadata);
 			}.bind(this) });
 		},
+
+        checkboxMapping: function (data) {
+            var instance = this;
+            var selectedDoc = instance.config.index;
+            var selectedFields = data.indices[selectedDoc].fields;
+
+            $.each(selectedFields, function (index, item) {
+                $("#mappingInfo").append("<input type = 'checkbox'>").append(item.field_name).append("</>");
+            });
+        },
 
 		_createFilters_handler: function(data) {
 			var filters = [];
@@ -4126,6 +4137,7 @@
 			return { tag: "DIV", children: [
 				{ tag: "DIV", cls: "uiFilterBrowser-filters" },
 				{ tag: "DIV", cls: "displayMapping", children: i18n.complex("DisplayMapping", [{tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "All", text:"All"}, i18n.text("DisplayMapping.All"), {tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "Select"}, i18n.text("DisplayMapping.Select") ])},
+				{ tag: "DIV", id : "mappingInfo"},
 				{ tag: "BUTTON", type: "button", text: i18n.text("General.Search"), onclick: this._search_handler },
 				{ tag: "LABEL", children:
 					i18n.complex("FilterBrowser.OutputType", { tag: "SELECT", cls: "uiFilterBrowser-outputFormat", children: [
