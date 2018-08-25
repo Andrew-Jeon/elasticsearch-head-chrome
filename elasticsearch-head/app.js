@@ -3903,7 +3903,8 @@
             var selectedFields = data.indices[selectedDoc].fields;
 
             $.each(selectedFields, function (index, item) {
-                $("#mappingInfo").append("<input type = 'checkbox' name='mappingItem'>").append(item.field_name).append("</>");
+                var fieldName = item.field_name;
+                $("#mappingInfo").append("<input type = 'checkbox' name='mappingItem' value="+ fieldName +">").append(fieldName).append("</>");
             });
         },
 
@@ -4023,10 +4024,27 @@
 			if(this.el.find(".uiFilterBrowser-showSrc").attr("checked")) {
 				this.fire("searchSource", search.search);
 			}
-			this._cluster.post( this.config.index + "/_search", search.getData(), this._results_handler );
+
+            var selectedMappingArrayList = Array();
+
+            if (this.selectedMappingInfo.length > 0) {
+                this.selectedMappingInfo.forEach(function (item) {
+                    selectedMappingArrayList.push(item.value);
+                });
+
+                var customSearch = this.addIncludesFieldQuery(search, selectedMappingArrayList);
+                this._cluster.post(this.config.index + "/_search", customSearch.getData(), this._results_handler);
+            } else {
+				this._cluster.post( this.config.index + "/_search", search.getData(), this._results_handler );
+			}
 		},
 
-        dateTimeRegExr : function(value){
+        addIncludesFieldQuery: function (searchObject, selectedList) {
+            searchObject.search["_source"] = {"includes": selectedList};
+            return searchObject;
+        },
+
+        dateTimeRegExr: function (value) {
             var pattern = /(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d).(\d\d\d)/i;
 
             if (!pattern.test(value)) {
@@ -4147,7 +4165,7 @@
 		_main_template: function() {
 			return { tag: "DIV", children: [
 				{ tag: "DIV", cls: "uiFilterBrowser-filters" },
-				{ tag: "DIV", cls: "displayMapping", children: i18n.complex("DisplayMapping", [{tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "All", text:"All", onclick:this._selectMappingInfo_Handler}, i18n.text("DisplayMapping.All"), {tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "Select", onclick:this._selectMappingInfo_Handler}, i18n.text("DisplayMapping.Select") ])},
+				{ tag: "DIV", cls: "displayMapping", children: i18n.complex("DisplayMapping", [{tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "All", text:"All", onclick:this._selectMappingInfo_Handler}, i18n.text("DisplayMapping.All"), {tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "Select", onclick:this._selectMappingInfo_Handler,  checked:"checked"}, i18n.text("DisplayMapping.Select") ])},
 				{ tag: "DIV", id : "mappingInfo"},
 				{ tag: "BUTTON", type: "button", text: i18n.text("General.Search"), onclick: this._search_handler },
 				{ tag: "LABEL", children:
