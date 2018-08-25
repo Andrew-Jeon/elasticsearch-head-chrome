@@ -3903,7 +3903,7 @@
             var selectedFields = data.indices[selectedDoc].fields;
 
             $.each(selectedFields, function (index, item) {
-                $("#mappingInfo").append("<input type = 'checkbox'>").append(item.field_name).append("</>");
+                $("#mappingInfo").append("<input type = 'checkbox' name='mappingItem'>").append(item.field_name).append("</>");
             });
         },
 
@@ -3962,6 +3962,7 @@
 			search.setSize( this.el.find(".uiFilterBrowser-outputSize").val() )
 			this.fire("startingSearch");
             this.displayMappingRadio = $('input[name=displayMappingRadio]:checked').val();
+            this.selectedMappingInfo = $(":checkbox[name=mappingItem]:checked");
 			this.filtersEl.find(".uiFilterBrowser-row").each(function(i, row) {
 				row = $(row);
 				var bool = row.find(".bool").val();
@@ -4127,6 +4128,16 @@
             return data;
         },
 
+        _selectMappingInfo_Handler: function (obj) {
+            if (obj.currentTarget.value == "All") {
+                $("input[name=mappingItem]:checkbox").prop("disabled", "disabled");
+            } else if (obj.currentTarget.value == "Select") {
+                $("input[name=mappingItem]:checkbox").removeProp("disabled");
+            } else {
+                console.log("--- error ---");
+            }
+        },
+
         setContentDateTime: function (obj) {
             obj.type = "datetime-local";
             obj.step = "0.001";
@@ -4136,7 +4147,7 @@
 		_main_template: function() {
 			return { tag: "DIV", children: [
 				{ tag: "DIV", cls: "uiFilterBrowser-filters" },
-				{ tag: "DIV", cls: "displayMapping", children: i18n.complex("DisplayMapping", [{tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "All", text:"All"}, i18n.text("DisplayMapping.All"), {tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "Select"}, i18n.text("DisplayMapping.Select") ])},
+				{ tag: "DIV", cls: "displayMapping", children: i18n.complex("DisplayMapping", [{tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "All", text:"All", onclick:this._selectMappingInfo_Handler}, i18n.text("DisplayMapping.All"), {tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "Select", onclick:this._selectMappingInfo_Handler}, i18n.text("DisplayMapping.Select") ])},
 				{ tag: "DIV", id : "mappingInfo"},
 				{ tag: "BUTTON", type: "button", text: i18n.text("General.Search"), onclick: this._search_handler },
 				{ tag: "LABEL", children:
