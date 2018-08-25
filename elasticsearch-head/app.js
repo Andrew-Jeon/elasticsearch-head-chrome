@@ -3946,6 +3946,7 @@
 		},
 		
 		_search_handler: function() {
+            var instance = this;
 			var search = new data.BoolQuery();
 			search.setSize( this.el.find(".uiFilterBrowser-outputSize").val() )
 			this.fire("startingSearch");
@@ -3977,22 +3978,34 @@
 						value[row.find(".fuzzyop").val()] = fuzzyqual;
 					}
 				} else {
-					value = row.find(".qual").val();
+                    value = row.find(".qual").val();
+				}
 
-                    if (row.find(".qual").attr("type") == "datetime-local") {
-                        var pattern = /(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d).(\d\d\d)/i;
+                if (op == "term" || op == "range") {
+                    if (op == "term") {
+                        var termValue = row.find(".qual").val();
+                        if (row.find(".qual").attr("type") == "datetime-local") {
+                            value = instance.dateTimeRegExr(termValue);
+                        }
+                    } else if (op == "range") {
+                        var lowQualValue = row.find(".lowqual").val(),
+                            highQualValue = row.find(".highqual").val();
 
-                        if (!pattern.test(value)) {
-                            var pattern2 = /(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d)/i;
-                            if (pattern2.test(value)) {
-                                value += ":00.000";
-                            } else {
-                                value += ".000";
+                        // If all of the range values are not blank
+                        if (!(lowQualValue == "" && highQualValue == "")) {
+
+                            // If each value is datetime-local, check regular expression
+                            if (row.find(".lowqual").attr("type") == "datetime-local") {
+                                value[row.find(".lowop").val()] = instance.dateTimeRegExr(lowQualValue);
+                            }
+
+                            if (row.find(".highqual").attr("type") == "datetime-local") {
+                                value[row.find(".highop").val()] = instance.dateTimeRegExr(highQualValue);
                             }
                         }
-                        value += "Z";
                     }
-				}
+                }
+
 				search.addClause(value, field, op, bool);
 			});
 			if(this.el.find(".uiFilterBrowser-showSrc").attr("checked")) {
@@ -4000,6 +4013,21 @@
 			}
 			this._cluster.post( this.config.index + "/_search", search.getData(), this._results_handler );
 		},
+
+        dateTimeRegExr : function(value){
+            var pattern = /(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d).(\d\d\d)/i;
+
+            if (!pattern.test(value)) {
+                var pattern2 = /(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d)/i;
+                if (pattern2.test(value)) {
+                    value += ":00.000";
+                } else {
+                    value += ".000";
+                }
+            }
+            value += "Z";
+            return value;
+        },
 		
 		_results_handler: function( data ) {
 			var type = this.el.find(".uiFilterBrowser-outputFormat").val();
@@ -4033,28 +4061,65 @@
 		},
 		
 		_changeQueryOp_handler: function(jEv) {
+            var instance = this;
 			var op = $(jEv.target), opv = op.val();
+            var selectedDoc = $(".uiIndexSelector-select option:selected").text();
 			op.siblings().remove(".qual,.range,.fuzzy");
 			if(opv === 'term' || opv === 'wildcard' || opv === 'prefix' || opv === "query_string" || opv === 'text') {
 				op.after({ tag: "INPUT", cls: "qual", type: "text" });
-                this.customClickEvent(jEv, op, "doc.start_date");
 			} else if(opv === 'range') {
 				op.after(this._range_template());
 			} else if(opv === 'fuzzy') {
 				op.after(this._fuzzy_template());
 			}
+
+            if(opv === "term" || opv === "range"){
+                var dateData = this.dateTimeData(instance);
+                this.customClickEvent(jEv, op, instance, "doc.start_date", dateData);
+            }
 		},
 
-        customClickEvent: function (jEv, op, fieldName) {
-            var instance = this;
+        customClickEvent: function (jEv, op, instance, fieldName, dateData) {
+            var selectedData = dateData[instance.config.index];
+            var subText = $(jEv.target.previousSibling).val().replace("doc.", "");
 
-            if ($(jEv.target.previousSibling).val() == fieldName) {
-                $(op).parent().find(".qual").each(function () {
-                    this.type = "datetime-local";
-                    this.step = "0.001";
-                    this.value = "2017001-01T00:12:12:000Z";
-                });
+            if (selectedData.has(subText)) {
+                if (op.val() === "term") {
+                    $(op).parent().find(".qual").each(function () {
+                        instance.setContentDateTime(this);
+                    });
+                } else if (op.val() === "range") {
+                    $(op).parent().find(".range").find(".lowqual").each(function () {
+                        instance.setContentDateTime(this);
+                    });
+                    $(op).parent().find(".range").find(".highqual").each(function () {
+                        instance.setContentDateTime(this);
+                    });
+                }
             }
+        },
+
+        dateTimeData: function (instance) {
+            var indices = instance.metadata.indices;
+            var data = Array();
+
+            $.each(indices, function (text, item) {
+                var set = new Set();
+                $.each(item.fields, function (fieldText, fieldItem) {
+                    if (fieldItem.type == "date") {
+                        set.add(fieldText);
+                    }
+                });
+                data[text] = set;
+            });
+
+            return data;
+        },
+
+        setContentDateTime: function (obj) {
+            obj.type = "datetime-local";
+            obj.step = "0.001";
+            obj.value = "2018-01-01T00:01:01:001Z";
         },
 		
 		_main_template: function() {
