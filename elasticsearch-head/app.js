@@ -4026,9 +4026,6 @@
 
 				search.addClause(value, field, op, bool);
 			});
-			if(this.el.find(".uiFilterBrowser-showSrc").attr("checked")) {
-				this.fire("searchSource", search.search);
-			}
 
             if (window.hasOwnProperty('paging')) {
                 search.search.from = Number(selectedPage);
@@ -4047,6 +4044,10 @@
             } else {
 				this._cluster.post( this.config.index + "/_search", search.getData(), this._results_handler );
 			}
+
+            if(this.el.find(".uiFilterBrowser-showSrc").attr("checked")) {
+                this.fire("searchSource", search.search);
+            }
 		},
 
         addIncludesFieldQuery: function (searchObject, selectedList) {
