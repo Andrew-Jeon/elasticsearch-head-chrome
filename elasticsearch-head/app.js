@@ -4027,9 +4027,10 @@
 				search.addClause(value, field, op, bool);
 			});
 
-            if (window.hasOwnProperty('paging')) {
+            if (window.hasOwnProperty('paging') && paging == true) {
                 search.search.from = Number(selectedPage);
                 search.search.size = selectedSize;
+                paging = false;
             }
 
             var selectedMappingArrayList = Array();
@@ -4194,7 +4195,7 @@
             var pageArrayList = Array();
 
             for (var thisPage = 1; thisPage <= totalPage; thisPage++) {
-                var $div = $("<text name='" + thisPage + "'> " + thisPage + " </text>");
+                var $div = $("<text name='" + thisPage + "' style='cursor:pointer;'> " + thisPage + " </text>");
 
                 $div.click(function () {
                     var clickPage = Number($(this).attr("name"));
