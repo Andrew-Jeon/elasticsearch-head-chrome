@@ -3901,10 +3901,15 @@
             var instance = this;
             var selectedDoc = instance.config.index;
             var selectedFields = data.indices[selectedDoc].fields;
+            var orderedSelectedFields = Object();
 
-            $.each(selectedFields, function (index, item) {
+            Object.keys(selectedFields).sort().forEach(function (key) {
+                orderedSelectedFields[key] = selectedFields[key];
+            });
+
+            $.each(orderedSelectedFields, function (index, item) {
                 var fieldName = item.field_name;
-                $("#mappingInfo").append("<input type = 'checkbox' name='mappingItem' value="+ fieldName +">").append(fieldName).append("</>");
+                $("#mappingInfo").append("<label for='" + fieldName + "'><input type = 'checkbox' id='" + fieldName + "' name='mappingItem' value=" + fieldName + ">" + fieldName + "</label>");
             });
         },
 
@@ -4025,9 +4030,14 @@
 				this.fire("searchSource", search.search);
 			}
 
+            if (window.hasOwnProperty('paging')) {
+                search.search.from = Number(selectedPage);
+                search.search.size = selectedSize;
+            }
+
             var selectedMappingArrayList = Array();
 
-            if (this.selectedMappingInfo.length > 0) {
+            if (this.selectedMappingInfo.length > 0 && this.displayMappingRadio !== 'All') {
                 this.selectedMappingInfo.forEach(function (item) {
                     selectedMappingArrayList.push(item.value);
                 });
@@ -4058,9 +4068,20 @@
             value += "Z";
             return value;
         },
-		
+
+        customPaging: function (totalPage, axisNumber) {
+            $("#pagingDiv").remove();
+            var select = this._custom_create_paging_text("paging", totalPage, axisNumber);
+            $(".uiStructuredQuery").append(select);
+        },
+
 		_results_handler: function( data ) {
+            var totalCount = data.hits.total;
+            var axisNumber = $(".uiFilterBrowser-outputSize").val();
+            var totalPage = Math.ceil(totalCount / axisNumber);
 			var type = this.el.find(".uiFilterBrowser-outputFormat").val();
+
+            this.customPaging(totalPage, axisNumber);
 			this.fire("results", this, { type: type, data: data, metadata: this.metadata });
 		},
 		
@@ -4160,6 +4181,32 @@
             obj.type = "datetime-local";
             obj.step = "0.001";
             obj.value = "2018-01-01T00:01:01:001Z";
+        },
+
+        _custom_create_div_template: function (divId) {
+            return { tag: "DIV", id: divId };
+        },
+
+        _custom_create_paging_text: function (name, totalPage, axisNumber) {
+            var instance = this;
+            var div = this._custom_create_div_template("pagingDiv");
+            var pageArrayList = Array();
+
+            for (var thisPage = 1; thisPage <= totalPage; thisPage++) {
+                var $div = $("<text name='" + thisPage + "'> " + thisPage + " </text>");
+
+                $div.click(function () {
+                    var clickPage = Number($(this).attr("name"));
+                    paging = true;
+                    selectedPage = (clickPage * Number(axisNumber)) - axisNumber;
+                    selectedSize = Number(axisNumber);
+                    instance._search_handler();
+                });
+
+                pageArrayList.push($div);
+            }
+            div.children = pageArrayList;
+            return div;
         },
 		
 		_main_template: function() {
