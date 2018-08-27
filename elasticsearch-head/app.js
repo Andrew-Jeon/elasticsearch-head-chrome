@@ -2071,39 +2071,40 @@
         // TODO : Refactoring
         _sort_handler: function () {
             var copiedData = $.extend(true, {}, this.config.store);
-            if (!window.hasOwnProperty("clickedFlag")) {
-                clickedFlag = 1;
+            var selectedFieldName = this.clickedFieldName;
+
+            if (this.isAscending === undefined) {
+                this.isAscending = true;
             }
 
-            if (clickedFlag == 1) {
-                clickedFlag = 0;
+            if (this.isAscending === true) {
+                this.isAscending = false;
                 copiedData.data.sort(function (a, b) {
-                    if (a._source._source[clickedFieldName] === undefined) return 1;
-                    if (b._source._source[clickedFieldName] === undefined) return -1;
-                    if (a._source._source[clickedFieldName] === null) return 1;
-                    if (b._source._source[clickedFieldName] === null) return -1;
-                    if (a._source._source[clickedFieldName] === b._source._source[clickedFieldName]) return 0;
-                    return a._source._source[clickedFieldName] > b._source._source[clickedFieldName] ? -1 : a._source._source[clickedFieldName] < b._source._source[clickedFieldName] ? 1 : 0;
+                    if (a._source._source[selectedFieldName] === undefined) return -1;
+                    if (b._source._source[selectedFieldName] === undefined) return 1;
+                    if (a._source._source[selectedFieldName] === null) return -1;
+                    if (b._source._source[selectedFieldName] === null) return 1;
+                    if (a._source._source[selectedFieldName] === b._source._source[selectedFieldName]) return 0;
+                    return a._source._source[selectedFieldName] < b._source._source[selectedFieldName] ? -1 : a._source._source[selectedFieldName] > b._source._source[selectedFieldName] ? 1 : 0;
                 });
             } else {
-                clickedFlag = 1;
+                this.isAscending = true;
                 copiedData.data.sort(function (a, b) {
-                    if (a._source._source[clickedFieldName] === undefined) return -1;
-                    if (b._source._source[clickedFieldName] === undefined) return 1;
-                    if (a._source._source[clickedFieldName] === null) return -1;
-                    if (b._source._source[clickedFieldName] === null) return 1;
-                    if (a._source._source[clickedFieldName] === b._source._source[clickedFieldName]) return 0;
-                    return a._source._source[clickedFieldName] < b._source._source[clickedFieldName] ? -1 : a._source._source[clickedFieldName] > b._source._source[clickedFieldName] ? 1 : 0;
+                    if (a._source._source[selectedFieldName] === undefined) return 1;
+                    if (b._source._source[selectedFieldName] === undefined) return -1;
+                    if (a._source._source[selectedFieldName] === null) return 1;
+                    if (b._source._source[selectedFieldName] === null) return -1;
+                    if (a._source._source[selectedFieldName] === b._source._source[selectedFieldName]) return 0;
+                    return a._source._source[selectedFieldName] > b._source._source[selectedFieldName] ? -1 : a._source._source[selectedFieldName] < b._source._source[selectedFieldName] ? 1 : 0;
                 });
             }
-
             this._data_handler(copiedData);
         },
 		_headerClick_handler: function(ev) {
 			var header = $(ev.target).closest("TH.uiTable-header-cell");
 			if(header.length) {
 				this.fire("headerClick", this, { header: header, column: header.data("column"), dir: header.data("dir") });
-                clickedFieldName = $(ev.target).text().replace("▼", "").replace("▲", "");
+                this.clickedFieldName = $(ev.target).text().replace("▼", "").replace("▲", "");
                 this.body.trigger("sort");
 			}
 		},
@@ -4105,8 +4106,8 @@
                     selectedMappingArrayList.push(item.value);
                 });
 
-                var customSearch = this.addIncludesFieldQuery(search, selectedMappingArrayList);
-                this._cluster.post(this.config.index + "/_search", customSearch.getData(), this._results_handler);
+                var mappingSearch = this.addIncludesFieldQuery(search, selectedMappingArrayList);
+                this._cluster.post(this.config.index + "/_search", mappingSearch.getData(), this._results_handler);
             } else {
 				this._cluster.post( this.config.index + "/_search", search.getData(), this._results_handler );
 			}
@@ -4136,9 +4137,9 @@
             return value;
         },
 
-        customPaging: function (totalPage, axisNumber) {
+        _paging_handler: function (totalPage, axisNumber) {
             $("#pagingDiv").remove();
-            var select = this._custom_create_paging_text("paging", totalPage, axisNumber);
+            var select = this._create_paging_text(totalPage, axisNumber);
             $(".uiStructuredQuery").append(select);
         },
 
@@ -4148,7 +4149,7 @@
             var totalPage = Math.ceil(totalCount / axisNumber);
 			var type = this.el.find(".uiFilterBrowser-outputFormat").val();
 
-            this.customPaging(totalPage, axisNumber);
+            this._paging_handler(totalPage, axisNumber);
 			this.fire("results", this, { type: type, data: data, metadata: this.metadata });
 		},
 		
@@ -4198,11 +4199,11 @@
 
             if(opv === "term" || opv === "range"){
                 var dateData = this.dateTimeData(instance);
-                this.customClickEvent(jEv, op, instance, "doc.start_date", dateData);
+                this.dateTimeClickEvent(jEv, op, instance, "doc.start_date", dateData);
             }
 		},
 
-        customClickEvent: function (jEv, op, instance, fieldName, dateData) {
+        dateTimeClickEvent: function (jEv, op, instance, fieldName, dateData) {
             var selectedData = dateData[instance.config.index];
             var subText = $(jEv.target.previousSibling).val().replace("doc.", "");
 
@@ -4255,13 +4256,13 @@
             obj.value = "2018-01-01T00:01:01:001Z";
         },
 
-        _custom_create_div_template: function (divId) {
-            return { tag: "DIV", id: divId };
+        _create_div_template: function (id) {
+            return { tag: "DIV", id: id };
         },
 
-        _custom_create_paging_text: function (name, totalPage, axisNumber) {
+        _create_paging_text: function (totalPage, axisNumber) {
             var instance = this;
-            var div = this._custom_create_div_template("pagingDiv");
+            var div = this._create_div_template("pagingDiv");
             var pageArrayList = Array();
 
             for (var thisPage = 1; thisPage <= totalPage; thisPage++) {
