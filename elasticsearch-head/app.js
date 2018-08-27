@@ -2068,10 +2068,43 @@
 				this.fire("rowClick", this, { row: row } );
 			}
 		},
+        // TODO : Refactoring
+        _sort_handler: function () {
+            var copiedData = $.extend(true, {}, this.config.store);
+            if (!window.hasOwnProperty("clickedFlag")) {
+                clickedFlag = 1;
+            }
+
+            if (clickedFlag == 1) {
+                clickedFlag = 0;
+                copiedData.data.sort(function (a, b) {
+                    if (a._source._source[clickedFieldName] === undefined) return 1;
+                    if (b._source._source[clickedFieldName] === undefined) return -1;
+                    if (a._source._source[clickedFieldName] === null) return 1;
+                    if (b._source._source[clickedFieldName] === null) return -1;
+                    if (a._source._source[clickedFieldName] === b._source._source[clickedFieldName]) return 0;
+                    return a._source._source[clickedFieldName] > b._source._source[clickedFieldName] ? -1 : a._source._source[clickedFieldName] < b._source._source[clickedFieldName] ? 1 : 0;
+                });
+            } else {
+                clickedFlag = 1;
+                copiedData.data.sort(function (a, b) {
+                    if (a._source._source[clickedFieldName] === undefined) return -1;
+                    if (b._source._source[clickedFieldName] === undefined) return 1;
+                    if (a._source._source[clickedFieldName] === null) return -1;
+                    if (b._source._source[clickedFieldName] === null) return 1;
+                    if (a._source._source[clickedFieldName] === b._source._source[clickedFieldName]) return 0;
+                    return a._source._source[clickedFieldName] < b._source._source[clickedFieldName] ? -1 : a._source._source[clickedFieldName] > b._source._source[clickedFieldName] ? 1 : 0;
+                });
+            }
+
+            this._data_handler(copiedData);
+        },
 		_headerClick_handler: function(ev) {
 			var header = $(ev.target).closest("TH.uiTable-header-cell");
 			if(header.length) {
 				this.fire("headerClick", this, { header: header, column: header.data("column"), dir: header.data("dir") });
+                clickedFieldName = $(ev.target).text().replace("▼", "").replace("▲", "");
+                this.body.trigger("sort");
 			}
 		},
 		_main_template: function() {
@@ -2081,6 +2114,7 @@
 				{ tag: "DIV", cls: "uiTable-body",
 					onclick: this._dataClick_handler,
 					onscroll: this._scroll_handler,
+					sort: this._sort_handler,
 					css: { height: this.config.height + "px", width: this.config.width + "px" }
 				}
 			] };
@@ -2096,7 +2130,7 @@
 				return { tag: "TH", data: { column: column, dir: dir }, cls: "uiTable-header-cell" + ((dir !== "none") ? " uiTable-sort" : ""), children: [
 					{ tag: "DIV", children: [
 						{ tag: "DIV", cls: "uiTable-headercell-menu", text: dir === "asc" ? "\u25b2" : "\u25bc" },
-						{ tag: "DIV", cls: "uiTable-headercell-text", text: column }
+						{ tag: "DIV", cls: "uiTable-headercell-text", text: column, style: "cursor:pointer;" }
 					]}
 				]};
 			}, this)};
@@ -4146,7 +4180,6 @@
                 select.after({ tag: "SELECT", cls: "op", onchange: this._changeQueryOp_handler, children: ops.map(ut.option_template) });
             }
 
-			select.after({ tag: "SELECT", cls: "op", onchange: this._changeQueryOp_handler, children: ops.map(ut.option_template) });
 			select.next().change();
 		},
 		
