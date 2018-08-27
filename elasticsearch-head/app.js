@@ -2045,6 +2045,27 @@
 			this.tools = this.el.find(".uiTable-tools");
 			this.attach( parent );
 		},
+        calcSort: function (data, selectedFieldName, type) {
+            if (type == "asc") {
+                data.data.sort(function (a, b) {
+                    if (a._source._source[selectedFieldName] === undefined) return -1;
+                    if (b._source._source[selectedFieldName] === undefined) return 1;
+                    if (a._source._source[selectedFieldName] === null) return -1;
+                    if (b._source._source[selectedFieldName] === null) return 1;
+                    if (a._source._source[selectedFieldName] === b._source._source[selectedFieldName]) return 0;
+                    return a._source._source[selectedFieldName] < b._source._source[selectedFieldName] ? -1 : a._source._source[selectedFieldName] > b._source._source[selectedFieldName] ? 1 : 0;
+                });
+            } else {
+                data.data.sort(function (a, b) {
+                    if (a._source._source[selectedFieldName] === undefined) return 1;
+                    if (b._source._source[selectedFieldName] === undefined) return -1;
+                    if (a._source._source[selectedFieldName] === null) return 1;
+                    if (b._source._source[selectedFieldName] === null) return -1;
+                    if (a._source._source[selectedFieldName] === b._source._source[selectedFieldName]) return 0;
+                    return a._source._source[selectedFieldName] > b._source._source[selectedFieldName] ? -1 : a._source._source[selectedFieldName] < b._source._source[selectedFieldName] ? 1 : 0;
+                });
+            }
+        },
 		_data_handler: function(store) {
 			this.tools.text(store.summary);
 			this.headers.empty().append(this._header_template(store.columns));
@@ -2068,7 +2089,6 @@
 				this.fire("rowClick", this, { row: row } );
 			}
 		},
-        // TODO : Refactoring
         _sort_handler: function () {
             var copiedData = $.extend(true, {}, this.config.store);
             var selectedFieldName = this.clickedFieldName;
@@ -2077,27 +2097,15 @@
                 this.isAscending = true;
             }
 
-            if (this.isAscending === true) {
-                this.isAscending = false;
-                copiedData.data.sort(function (a, b) {
-                    if (a._source._source[selectedFieldName] === undefined) return -1;
-                    if (b._source._source[selectedFieldName] === undefined) return 1;
-                    if (a._source._source[selectedFieldName] === null) return -1;
-                    if (b._source._source[selectedFieldName] === null) return 1;
-                    if (a._source._source[selectedFieldName] === b._source._source[selectedFieldName]) return 0;
-                    return a._source._source[selectedFieldName] < b._source._source[selectedFieldName] ? -1 : a._source._source[selectedFieldName] > b._source._source[selectedFieldName] ? 1 : 0;
-                });
-            } else {
+            if (selectedFieldName === this.preSelectedField && this.isAscending === false) {
                 this.isAscending = true;
-                copiedData.data.sort(function (a, b) {
-                    if (a._source._source[selectedFieldName] === undefined) return 1;
-                    if (b._source._source[selectedFieldName] === undefined) return -1;
-                    if (a._source._source[selectedFieldName] === null) return 1;
-                    if (b._source._source[selectedFieldName] === null) return -1;
-                    if (a._source._source[selectedFieldName] === b._source._source[selectedFieldName]) return 0;
-                    return a._source._source[selectedFieldName] > b._source._source[selectedFieldName] ? -1 : a._source._source[selectedFieldName] < b._source._source[selectedFieldName] ? 1 : 0;
-                });
+                this.calcSort(copiedData, selectedFieldName, "desc");
+            } else {
+                this.isAscending = false;
+                this.calcSort(copiedData, selectedFieldName, "asc");
             }
+
+            this.preSelectedField = selectedFieldName;
             this._data_handler(copiedData);
         },
 		_headerClick_handler: function(ev) {
