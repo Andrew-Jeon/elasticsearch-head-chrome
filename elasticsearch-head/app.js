@@ -1228,7 +1228,17 @@
 		},
 		getData: function() {
 			return JSON.stringify(this.search);
-		}
+		},
+        setSort: function (field, sort) {
+            var exceptFieldName = ["match_all", "_all"];
+            var subFieldName = field.substring(field.indexOf(".") + 1);
+
+            if (!exceptFieldName.includes(subFieldName)) {
+                var obj = Object();
+                obj[subFieldName] = sort;
+                this.search.sort.push(obj);
+            }
+        }
 	});
 
 })( this.app );
@@ -3889,6 +3899,7 @@
 			this.el = $(this._main_template());
 			this.filtersEl = this.el.find(".uiFilterBrowser-filters");
             this.displayMapping = this.el.find(".displayMapping");
+            this.sortsEl = this.el.find(".uiSortsBrowser");
 			this.attach( parent );
 			new data.MetaDataFactory({ cluster: this._cluster, onReady: function(metadata, eventData) {
 				this.metadata = metadata;
@@ -3949,11 +3960,16 @@
 			].concat(filters);
 
 			this._addFilterRow_handler();
+            this._addSortRow_handler();
 		},
 		
 		_addFilterRow_handler: function() {
 			this.filtersEl.append(this._filter_template());
 		},
+
+        _addSortRow_handler: function () {
+            this.sortsEl.append(this._sort_template());
+        },
 		
 		_removeFilterRow_handler: function(jEv) {
 			$(jEv.target).closest("DIV.uiFilterBrowser-row").remove();
@@ -3961,6 +3977,13 @@
 				this._addFilterRow_handler();
 			}
 		},
+
+        _removeSortRow_handler: function (jEv) {
+            $(jEv.target).closest("DIV.uiSortsBrowser-row").remove();
+            if (this.sortsEl.children().length === 0) {
+                this._addSortRow_handler();
+            }
+        },
 		
 		_search_handler: function() {
             var instance = this;
@@ -4027,6 +4050,14 @@
 				search.addClause(value, field, op, bool);
 			});
 
+            this.sortsEl.find(".uiSortsBrowser-row").each(function (i, row) {
+                var row = $(row);
+                var field = row.find(".field").val();
+                var sort = row.find(".sort").val();
+
+                search.setSort(field, sort);
+            });
+
             if (window.hasOwnProperty('paging') && paging == true) {
                 search.search.from = Number(selectedPage);
                 search.search.size = selectedSize;
@@ -4089,6 +4120,7 @@
 		
 		_changeQueryField_handler: function(jEv) {
 			var select = $(jEv.target);
+			var selectedClassName = $(select).parent("div").attr("class");
 			var spec = select.children(":selected").data("spec");
 			select.siblings().remove(".op,.qual,.range,.fuzzy");
 			var ops = [];
@@ -4109,6 +4141,11 @@
 			} else if(spec.type === 'boolean') {
 				ops = ["term"]
 			}
+
+            if (selectedClassName !== "uiSortsBrowser-row") {
+                select.after({ tag: "SELECT", cls: "op", onchange: this._changeQueryOp_handler, children: ops.map(ut.option_template) });
+            }
+
 			select.after({ tag: "SELECT", cls: "op", onchange: this._changeQueryOp_handler, children: ops.map(ut.option_template) });
 			select.next().change();
 		},
@@ -4215,7 +4252,8 @@
 			return { tag: "DIV", children: [
 				{ tag: "DIV", cls: "uiFilterBrowser-filters" },
 				{ tag: "DIV", cls: "displayMapping", children: i18n.complex("DisplayMapping", [{tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "All", text:"All", onclick:this._selectMappingInfo_Handler}, i18n.text("DisplayMapping.All"), {tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "Select", onclick:this._selectMappingInfo_Handler,  checked:"checked"}, i18n.text("DisplayMapping.Select") ])},
-				{ tag: "DIV", id : "mappingInfo"},
+				{ tag: "DIV", id : "mappingInfo" },
+				{ tag: "DIV", cls:  "uiSortsBrowser" },
 				{ tag: "BUTTON", type: "button", text: i18n.text("General.Search"), onclick: this._search_handler },
 				{ tag: "LABEL", children:
 					i18n.complex("FilterBrowser.OutputType", { tag: "SELECT", cls: "uiFilterBrowser-outputFormat", children: [
@@ -4243,8 +4281,19 @@
 				{ tag: "BUTTON", type: "button", text: "-", onclick: this._removeFilterRow_handler }
 			]};
 		},
-		
-		_range_template: function() {
+
+        _sort_template: function() {
+            return { tag: "DIV", cls: "uiSortsBrowser-row", children: [
+                    { tag: "SELECT", cls: "field", onchange: this._changeQueryField_handler, children: this.filters.map(function(f) {
+                            return { tag: "OPTION", data: { spec: f }, value: f.path.join("."), text: f.path.join(".") };
+                        })},
+                    { tag: "SELECT", cls: "sort", children: ["asc", "desc"].map(ut.option_template) },
+                    { tag: "BUTTON", type: "button", text: "+", onclick: this._addSortRow_handler },
+                    { tag: "BUTTON", type: "button", text: "-", onclick: this._removeSortRow_handler }
+                ]};
+        },
+
+        _range_template: function() {
 			return { tag: "SPAN", cls: "range", children: [
 				{ tag: "SELECT", cls: "lowop", children: ["gt", "gte"].map(ut.option_template) },
 				{ tag: "INPUT", type: "text", cls: "lowqual" },
