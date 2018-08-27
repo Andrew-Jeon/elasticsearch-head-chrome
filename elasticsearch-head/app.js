@@ -4251,9 +4251,12 @@
 		_main_template: function() {
 			return { tag: "DIV", children: [
 				{ tag: "DIV", cls: "uiFilterBrowser-filters" },
+				{ tag: "HR"},
 				{ tag: "DIV", cls: "displayMapping", children: i18n.complex("DisplayMapping", [{tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "All", text:"All", onclick:this._selectMappingInfo_Handler}, i18n.text("DisplayMapping.All"), {tag: "input", cls:"displayMappingRadio", name:"displayMappingRadio", type: "radio", value: "Select", onclick:this._selectMappingInfo_Handler,  checked:"checked"}, i18n.text("DisplayMapping.Select") ])},
 				{ tag: "DIV", id : "mappingInfo" },
+				{ tag: "HR"},
 				{ tag: "DIV", cls:  "uiSortsBrowser" },
+				{ tag: "HR"},
 				{ tag: "BUTTON", type: "button", text: i18n.text("General.Search"), onclick: this._search_handler },
 				{ tag: "LABEL", children:
 					i18n.complex("FilterBrowser.OutputType", { tag: "SELECT", cls: "uiFilterBrowser-outputFormat", children: [
