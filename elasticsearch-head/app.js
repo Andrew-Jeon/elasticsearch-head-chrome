@@ -4262,6 +4262,7 @@
             obj.type = "datetime-local";
             obj.step = "0.001";
             obj.value = "2018-01-01T00:01:01:001Z";
+            $(obj).bind("mousewheel", function(e){ });
         },
 
         _create_div_template: function (id) {
