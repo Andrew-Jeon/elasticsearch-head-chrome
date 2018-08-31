@@ -4131,16 +4131,17 @@
         },
 
         dateTimeRegExr: function (value) {
-            var pattern = /(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d).(\d\d\d)/i;
+            var checkPattern = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).(\d{3})/i;
 
-            if (!pattern.test(value)) {
-                var pattern2 = /(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d)/i;
-                if (pattern2.test(value)) {
-                    value += ":00.000";
-                } else {
+            if (!checkPattern.test(value)) {
+                checkPattern = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/i;
+                if (checkPattern.test(value)) {
                     value += ".000";
+                } else {
+                    value += ":00.000";
                 }
             }
+
             value += "Z";
             return value;
         },
@@ -4259,10 +4260,24 @@
         },
 
         setContentDateTime: function (obj) {
+            Date.prototype.yyyymmdd = function () {
+                var mm = this.getMonth() + 1;
+                var dd = this.getDate();
+
+                return [this.getFullYear(),
+                    '-', (mm > 9 ? '' : '0') + mm,
+                    '-', (dd > 9 ? '' : '0') + dd,
+                ].join('');
+            };
+
+            var date = new Date();
+            var defaultDate = date.yyyymmdd() + "T00:00:00";
+
             obj.type = "datetime-local";
             obj.step = "0.001";
-            obj.value = "2018-01-01T00:01:01:001Z";
-            $(obj).bind("mousewheel", function(e){ });
+            obj.defaultValue = defaultDate;
+            $(obj).bind("mousewheel", function (e) {
+            });
         },
 
         _create_div_template: function (id) {
